@@ -81,3 +81,22 @@ struct CatsBreedURN: TechStackURN {
     var method: HTTPMethod = .get
     var queryPath: String? = "limit=9"
 }
+
+protocol DataLoadingURN: TechStackURN where Derived == Data {
+    
+    var url: URL? {get set}
+}
+
+extension DataLoadingURN {
+    var endPoint: EndPoint {
+        return .none
+    }
+    var method: HTTPMethod {
+        .get
+    }
+}
+
+struct ImageDataURN: DataLoadingURN {
+    var url: URL?
+    typealias Derived = Data
+}

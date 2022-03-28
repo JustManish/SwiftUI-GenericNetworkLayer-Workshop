@@ -15,7 +15,11 @@ struct BreedView: View {
     var body: some View {
         HStack {
             if breed.image?.url != nil {
-                ImageLoadingView(url: breed.image!.url)
+                _AsyncImage(url: URL(string: breed.image?.url ?? "")!) {
+                    Text("Loading...")
+                }
+                .aspectRatio(contentMode: .fit)
+                .frame(width: imageSize, height: imageSize)
             } else {
                 Color.gray.frame(width: imageSize, height: imageSize)
             }

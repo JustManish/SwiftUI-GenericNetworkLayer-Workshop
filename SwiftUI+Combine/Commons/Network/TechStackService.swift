@@ -6,31 +6,19 @@
 //
 
 import Foundation
+import Combine
 
-protocol TechStackServiceProtocol: APIServiceProtocol {
-	func request<T: URN>(with URN: T, completionHandler: @escaping (Result<T.Derived, TechStackError>) -> Void)
+protocol TechStackServiceProtocol: _APIServiceProtocol {
+	func request<T: URN>(with URN: T) -> AnyPublisher<T.Derived, TechStackError>
 }
 
-class TechStackService: APIService, TechStackServiceProtocol {
+class TechStackService: _APIService, TechStackServiceProtocol {
     
     let tokenString = ""
     
-    func request<T: URN>(with URN: T,
-                         completionHandler: @escaping (Result<T.Derived, TechStackError>) -> Void) {
-        
+    func request<T>(with URN: T) -> AnyPublisher<T.Derived, TechStackError> where T : URN {
         let headers = self.generateHeaders(with: tokenString)
-        self.makeRequest(with: URN, headers: headers) { (result) in
-            switch result {
-            case .success(let value):
-                completionHandler(.success(value))
-            case .failure(let error):
-                if error == .apiVersionNotSupported {
-                    print("API Verssion Not supported.")
-                } else {
-                    completionHandler(.failure(error))
-                }
-            }
-        }
+        return self.request(with: URN, headers: headers)
     }
     
 	// MARK: - Private

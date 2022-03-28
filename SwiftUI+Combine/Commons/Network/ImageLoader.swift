@@ -7,47 +7,50 @@
 
 import Foundation
 import UIKit
+import Combine
 
 class ImageLoader: TechStackService, ObservableObject {
     
-    let url: String?
+    @Published var image: UIImage?
+    private let url: URL
     
-    @Published var image: UIImage? = nil
-    @Published var errorMessage: String?
-    @Published var isLoading: Bool = false
+    private var cancellable: AnyCancellable?
     
-    init(url: String?) {
+    private var cache: ImageCache?
+    
+    init(url: URL, cache: ImageCache? = nil) {
+        self.url = url
+        self.cache = cache
+    }
+    
+    init(url: URL) {
         self.url = url
     }
     
-    func fetch() {
+    deinit {
+        cancel()
+    }
+    
+    func load() {
         
-        guard image == nil && !isLoading else {
+        if let image = cache?[url] {
+            self.image = image
             return
         }
         
-        guard let urlString = url else {
-            errorMessage = TechStackError.invalidURL.localizedDescription
-            return
-        }
-        isLoading = true
-        loadImageData(with: URL(string: urlString)) { [weak self] result in
-            
-            guard let _self = self else {
-                self?.errorMessage = TechStackError.invalidSelf.localizedDescription
-                return
-            }
-            
-            switch result {
-            case .success(let data):
-                DispatchQueue.main.async {
-                    _self.image = UIImage(data: data)
-                }
-            case .failure(let error):
-                DispatchQueue.main.async {
-                    _self.errorMessage = error.localizedDescription
-                }
-            }
-        }
+        cancellable = URLSession.shared.dataTaskPublisher(for: url)
+            .map { UIImage(data: $0.data) }
+            .replaceError(with: nil)
+            .handleEvents(receiveOutput: { [weak self] in self?.cache($0) })
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.image = $0 }
+    }
+    
+    func cancel() {
+        cancellable?.cancel()
+    }
+    
+    private func cache(_ image: UIImage?) {
+        image.map { cache?[url] = $0 }
     }
 }

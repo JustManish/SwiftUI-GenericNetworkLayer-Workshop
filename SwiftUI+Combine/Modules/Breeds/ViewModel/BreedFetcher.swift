@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 final class BreedFetcher: TechStackService, ObservableObject {
     
@@ -13,6 +14,8 @@ final class BreedFetcher: TechStackService, ObservableObject {
     @Published var filteredCats: [Breed] = []
     @Published var isLoading: Bool = false
     @Published var error: Error?
+    
+    private(set) var cancellable: AnyCancellable?
     
     override init() {
         super.init()
@@ -30,23 +33,20 @@ final class BreedFetcher: TechStackService, ObservableObject {
     
     private func fetchBreeds() {
         isLoading = true
-        request(with: CatsBreedURN()) { [weak self] result in
-            
-            guard let _self = self else {
-                return
-            }
-            DispatchQueue.main.async {
-                _self.isLoading = false
-            }
-            switch result {
-            case .success(let breeds):
-                DispatchQueue.main.async {
-                    _self.catBreeds = breeds
+        
+         cancellable = request(with: CatsBreedURN())
+            .sink { completion in
+                self.isLoading = false
+                switch completion {
+                case .finished:
+                    print("Done!")
+                case .failure(let error):
+                    self.error = error
                 }
-            case .failure(let error):
-                _self.error = error
+            } receiveValue: { breeds in
+                self.isLoading = false
+                self.catBreeds = breeds
             }
-        }
     }
     
 }

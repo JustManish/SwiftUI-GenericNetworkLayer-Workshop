@@ -9,11 +9,14 @@ import Foundation
 
 enum EndPoint {
     case fetchBreeds
+    case none
     
     var rawValue: String {
         switch self {
         case .fetchBreeds:
             return "/v1/breeds"
+        case .none:
+            return ""
         }
     }
 }
